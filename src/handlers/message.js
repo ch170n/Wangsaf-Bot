@@ -6,6 +6,12 @@ import pingCommand from '../commands/tools/ping.js';
 import stikerCommand from '../commands/tools/stiker.js';
 import startCommand from '../commands/general/start.js';
 import helpCommand from '../commands/general/help.js';
+import aiCommand from '../commands/ai/chatgpt.js';
+import geminiCommand from '../commands/ai/gemini.js';
+import grokCommand from '../commands/ai/grok.js';
+import mahasiswaCommand from '../commands/tools/mahasiswa.js';
+import qrcodeCommand from '../commands/tools/qrcode.js';
+import downloaderCommand from '../commands/tools/downloader.js';
 
 export const handleMessage = async (sock, m) => {
     try {
@@ -44,13 +50,33 @@ export const handleMessage = async (sock, m) => {
             else if (cmd === 'help' || cmd === 'menu') {
                 await helpCommand(sock, msg, remoteJid);
             }
-            else if (cmd === 'stiker' || cmd === 'sticker' || cmd === 's') {
-                const isQuotedImage = msg.message.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage;
-                // Jika user langsung ngirim gambar dengan caption /stiker, ATAU dia mereply pesan berisikan gambar
-                if (type === 'imageMessage' || isQuotedImage) {
+            else if (cmd === 'cgpt' || cmd === 'chatgpt') {
+                await aiCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'gemini') {
+                await geminiCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'grok') {
+                await grokCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'mahasiswa' || cmd === 'mhs') {
+                await mahasiswaCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'downloader' || cmd === 'download' || cmd === 'dl') {
+                await downloaderCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'qrcode' || cmd === 'qr') {
+                await qrcodeCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'stiker' || cmd === 's') {
+                const quotedMsg = msg.message.extendedTextMessage?.contextInfo?.quotedMessage;
+                const isQuotedMedia = quotedMsg?.imageMessage || quotedMsg?.videoMessage;
+                
+                // Jika user langsung ngirim gambar/video dengan caption /stiker, ATAU mereply media
+                if (type === 'imageMessage' || type === 'videoMessage' || isQuotedMedia) {
                     await stikerCommand(sock, msg, remoteJid);
                 } else {
-                    await sock.sendMessage(remoteJid, { text: `Harap kirimkan gambar beserta caption *${config.prefix}stiker* atau balas (reply) gambar temanmu dengan *${config.prefix}stiker*` }, { quoted: msg });
+                    await sock.sendMessage(remoteJid, { text: `Harap kirimkan media (Foto/Video Singkat) beserta caption *${config.prefix}stiker* atau balas (reply) media temanmu dengan *${config.prefix}stiker*` }, { quoted: msg });
                 }
             }
         }
