@@ -11,7 +11,7 @@ export default async function (sock, msg, remoteJid) {
 🧠 *Artifical Intelligence*
 - *${config.prefix}chatgpt* atau *${config.prefix}cgpt* - ChatGPT Chat (GPT-4o Mini)
 - *${config.prefix}gemini* - Google Gemini Chat (Gemini 2.5 Flash)
-- *${config.prefix}grok* - Grok xAI (Grok 3 Mini)
+- *${config.prefix}grok* - Grok xAI Chat (Grok 3 Mini)
 
 🛠️ *Tools & Media*
 - *${config.prefix}stiker* atau *${config.prefix}s* - Mengubah gambar/video jadi stiker
