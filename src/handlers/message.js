@@ -12,6 +12,10 @@ import grokCommand from '../commands/ai/grok.js';
 import mahasiswaCommand from '../commands/tools/mahasiswa.js';
 import qrcodeCommand from '../commands/tools/qrcode.js';
 import downloaderCommand from '../commands/tools/downloader.js';
+import whatanimeCommand from '../commands/tools/whatanime.js';
+import fbdlCommand from '../commands/tools/fbdl.js';
+import tinyurlCommand from '../commands/tools/tinyurl.js';
+import sholatCommand from '../commands/tools/sholat.js';
 
 export const handleMessage = async (sock, m) => {
     try {
@@ -77,6 +81,18 @@ export const handleMessage = async (sock, m) => {
             }
             else if (cmd === 'qrcode' || cmd === 'qr') {
                 await qrcodeCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'whatanime' || cmd === 'wait') {
+                await whatanimeCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'tinyurl' || cmd === 'shortener' || cmd === 'short') {
+                await tinyurlCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'sholat' || cmd === 'jadwalsholat') {
+                await sholatCommand(sock, msg, remoteJid, args);
+            }
+            else if (cmd === 'fbdl' || cmd === 'fb') {
+                await fbdlCommand(sock, msg, remoteJid, args);
             }
             else if (cmd === 'stiker' || cmd === 's') {
                 const quotedMsg = msg.message.extendedTextMessage?.contextInfo?.quotedMessage;

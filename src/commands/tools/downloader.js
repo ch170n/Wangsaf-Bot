@@ -15,7 +15,7 @@ export default async function (sock, msg, remoteJid, args) {
     try {
         await sock.sendMessage(remoteJid, { text: '⏳ Sedang melacak dan mengekstraksi media dari URL tersebut...' }, { quoted: msg });
 
-        const endpoint = `https://exsalapi.my.id/api/downloader/aio?apikey=${config.apiKey}&url=${encodeURIComponent(url)}`;
+        const endpoint = `https://exsalapi.my.id/api/downloader/aio?apikey=${config.apiKeyExsal}&url=${encodeURIComponent(url)}`;
         
         const response = await fetch(endpoint);
         const data = await response.json();

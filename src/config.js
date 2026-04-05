@@ -7,5 +7,7 @@ export default {
     prefix: process.env.PREFIX || '/',
     botNumber: process.env.BOT_NUMBER || '', // Nomor bot (dari .env)
     ownerNumber: process.env.OWNER_NUMBER ? `${process.env.OWNER_NUMBER}@s.whatsapp.net` : '',
-    apiKey: process.env.API_KEY || 'freepublic', // Key public
+    apiKeyExsal: process.env.API_KEY_EXSALAPI || 'freepublic',
+    apiKeyBagah: process.env.API_KEY_BAGAHPROJECT || '', 
+    apiKeyBagahFallback: process.env.API_KEY_BAGAHPROJECT2 || null,
 };

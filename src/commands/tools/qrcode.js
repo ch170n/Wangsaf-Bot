@@ -14,7 +14,7 @@ export default async function (sock, msg, remoteJid, args) {
     try {
         await sock.sendMessage(remoteJid, { text: '⏳ Sedang mencetak QR Code...' }, { quoted: msg });
 
-        const endpoint = `https://exsalapi.my.id/api/maker/qr-code?apikey=${config.apiKey}&text=${encodeURIComponent(text)}`;
+        const endpoint = `https://exsalapi.my.id/api/maker/qr-code?apikey=${config.apiKeyExsal}&text=${encodeURIComponent(text)}`;
         
         // Mengambil respons fetch, lalu mengubah isi unduhannya langsung menjadi binari Buffer
         const response = await fetch(endpoint);

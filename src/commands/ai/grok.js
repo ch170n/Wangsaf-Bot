@@ -15,7 +15,7 @@ export default async function (sock, msg, remoteJid, args) {
     try {
         await sock.sendMessage(remoteJid, { text: '⏳ Sedang memikirkan jawaban...' }, { quoted: msg });
 
-        const endpoint = `https://exsalapi.my.id/api/ai/text/grok-3-mini?apikey=${config.apiKey}&text=${encodeURIComponent(text)}`;
+        const endpoint = `https://exsalapi.my.id/api/ai/text/grok-3-mini?apikey=${config.apiKeyExsal}&text=${encodeURIComponent(text)}`;
         
         const response = await fetch(endpoint);
         const data = await response.json();

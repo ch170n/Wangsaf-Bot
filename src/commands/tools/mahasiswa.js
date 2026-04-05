@@ -14,7 +14,7 @@ export default async function (sock, msg, remoteJid, args) {
     try {
         await sock.sendMessage(remoteJid, { text: '⏳ Sedang mengumpulkan data dari server...' }, { quoted: msg });
 
-        const endpoint = `https://exsalapi.my.id/api/search/mahasiswa?apikey=${config.apiKey}&nama=${encodeURIComponent(nama)}`;
+        const endpoint = `https://exsalapi.my.id/api/search/mahasiswa?apikey=${config.apiKeyExsal}&nama=${encodeURIComponent(nama)}`;
         
         const response = await fetch(endpoint);
         const data = await response.json();

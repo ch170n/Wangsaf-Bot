@@ -15,7 +15,7 @@ export default async function (sock, msg, remoteJid, args) {
     try {
         await sock.sendMessage(remoteJid, { text: '⏳ Sedang memikirkan jawaban...' }, { quoted: msg });
 
-        const endpoint = `https://exsalapi.my.id/api/ai/text/gemini-2.5-flash-v2?apikey=${config.apiKey}&prompt=${encodeURIComponent(text)}`;
+        const endpoint = `https://exsalapi.my.id/api/ai/text/gemini-2.5-flash-v2?apikey=${config.apiKeyExsal}&prompt=${encodeURIComponent(text)}`;
         
         const response = await fetch(endpoint);
         const data = await response.json();
