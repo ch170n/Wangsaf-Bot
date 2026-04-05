@@ -35,13 +35,14 @@ export default async function (sock, msg, remoteJid, args) {
                 remoteJid, 
                 { 
                     video: { url: videoMetadata.url }, 
-                    caption: `📥 ${description}\nResolusi: ${videoMetadata.quality}` 
+                    caption: `📥 ${description} ${videoMetadata.quality}` 
                 }, 
                 { quoted: msg }
             );
 
         } else {
-            await sock.sendMessage(remoteJid, { text: `😔 Maaf, video Facebook di URL tersebut tidak dapat diambil. Kemungkinan karena statusnya bersifat Pribadi (Private) / URL salah / Format Reels tidak didukung.` }, { quoted: msg });
+            const apiMessage = data.message || JSON.stringify(data).substring(0, 150);
+            await sock.sendMessage(remoteJid, { text: `😔 Proses gagal. Terdapat penolakan dari API:\n\n*Pesan Asli Server:* ${apiMessage}\n\n*Catatan:* Pastikan video tidak di-set *Private* dan tautan Anda valid.` }, { quoted: msg });
         }
 
     } catch (error) {
