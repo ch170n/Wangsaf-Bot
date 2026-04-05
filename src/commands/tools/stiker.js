@@ -77,7 +77,6 @@ export default async function (sock, msg, remoteJid) {
                 .webp({ quality: 70 })
                 .toBuffer();
         } else {
-            // PENGGUNAAN CHILD_PROCESS MURNI
             const tempDir = os.tmpdir();
             const tempPrefix = path.join(tempDir, `stiker_${Date.now()}`);
             const inputExt = isGif ? '.gif' : '.mp4'; 
@@ -100,8 +99,8 @@ export default async function (sock, msg, remoteJid) {
                     }
                 }
                 
-                // Konfigurasi WebP untuk Standar Animasi WA WebP (Format warna hex 0x00000000 mencegah conflict pada ffmpeg system)
-                const command = `${exePath} -i "${tempIn}" -vcodec libwebp -filter:v fps=15,scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000 -lossless 0 -loop 0 -preset default -an -vsync 0 -t 00:00:10 "${tempOut}"`;
+                // Konfigurasi WebP untuk Standar Animasi WA WebP.
+                const command = `${exePath} -i "${tempIn}" -vcodec libwebp -filter:v "fps=15,scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000" -lossless 0 -loop 0 -preset default -an -vsync 0 -t 00:00:10 "${tempOut}"`;
                 
                 exec(command, (err, stdout, stderr) => {
                     if (err) {
@@ -121,7 +120,7 @@ export default async function (sock, msg, remoteJid) {
         
         // Membocorkan detail error agar dapat dipecahkan
         const errMsg = error.message || String(error);
-        await sock.sendMessage(remoteJid, { text: `😔 *Gagal memproses Stiker!*\n\nPesan error server):\n_${errMsg.substring(0, 500)}_` }, { quoted: msg });
+        await sock.sendMessage(remoteJid, { text: `😔 *Gagal memproses Stiker!*\n\nPesan error server: _${errMsg.substring(0, 500)}_` }, { quoted: msg });
     } finally {
         try {
             if (tempIn && fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
