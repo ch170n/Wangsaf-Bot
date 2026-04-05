@@ -1,7 +1,6 @@
 import config from '../../config.js';
 
 export default async function (sock, msg, remoteJid, args) {
-    // URL biasanya adalah kata pertama
     const url = args[0];
     
     // Pengecekan url dasar
@@ -24,17 +23,15 @@ export default async function (sock, msg, remoteJid, args) {
         if (data.status === true && data.data && data.data.media && data.data.media.length > 0) {
             const title = data.data.title || 'Media Downloader';
             
-            // Sosial media seperti Instagram seringkali bisa memuat lebih dari 1 gambar (Carousel)
-            // Jadi kita ulangi pengiriman sebanyak jumlah media yang ditemukan di dalam array
+            // Mengambil semua media yang ditemukan
             for (let i = 0; i < data.data.media.length; i++) {
                 const item = data.data.media[i];
-                const type = item.type; // Tipenya "photo" atau "video" dsb
+                const type = item.type; 
                 const mediaUrl = item.url;
                 
                 // Memberikan penanda urutan gambar jika terdapat lebih dari satu
                 const captionText = `📥 *${title}*\n${data.data.media.length > 1 ? `(Bagian ${i + 1} dari ${data.data.media.length})` : ''}`.trim();
 
-                // Baileys sudah sangat pintar. Mengirimkan parameter { url: ... } akan otomatis
                 // membuat Baileys mem-fetch berkas tersebut langsung ke server WhatsApp sebelum dikirim 
                 if (type === 'photo' || type === 'image') {
                     await sock.sendMessage(remoteJid, { image: { url: mediaUrl }, caption: captionText }, { quoted: msg });

@@ -3,7 +3,7 @@ import config from '../../config.js';
 export default async function (sock, msg, remoteJid, args) {
     const text = args.join(' ');
     
-    // Validasi input pertanyaan
+    // Validasi jika user hanya mengetik perintah tanpa pertanyaan
     if (!text) {
         return await sock.sendMessage(
             remoteJid, 
@@ -15,22 +15,21 @@ export default async function (sock, msg, remoteJid, args) {
     try {
         await sock.sendMessage(remoteJid, { text: '⏳ Sedang memikirkan jawaban...' }, { quoted: msg });
 
-        // Endpoint Grok (Memakai parameter "text")
         const endpoint = `https://exsalapi.my.id/api/ai/text/grok-3-mini?apikey=${config.apiKey}&text=${encodeURIComponent(text)}`;
         
         const response = await fetch(endpoint);
         const data = await response.json();
 
-        // Path JSON spesifik Grok (sama dengan format GPT v2)
         let aiReply = data?.data?.content;
 
+        // Validasi apabila API gagal merespons dengan konten (atau error/sedang limit)
         if (!aiReply) {
              aiReply = "Maaf, Grok sedang sibuk / tidak ada respons.";
         } else if (typeof aiReply !== 'string') {
              aiReply = JSON.stringify(aiReply);
         }
 
-        // Tembakkan balasan
+        // Mengirimkan respon chatgpt kembali ke nomor user
         await sock.sendMessage(remoteJid, { text: aiReply }, { quoted: msg });
 
     } catch (error) {

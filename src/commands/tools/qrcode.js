@@ -16,11 +16,10 @@ export default async function (sock, msg, remoteJid, args) {
 
         const endpoint = `https://exsalapi.my.id/api/maker/qr-code?apikey=${config.apiKey}&text=${encodeURIComponent(text)}`;
         
-        // Kita mengambil respons fetch, lalu mengubah isi unduhannya langsung menjadi binari Buffer
+        // Mengambil respons fetch, lalu mengubah isi unduhannya langsung menjadi binari Buffer
         const response = await fetch(endpoint);
         
-        // Biasanya API mengembalikan JSON jika terjadi error (seperti Invalid API Key), 
-        // tapi gambar murni saat sukses. Kita pastikan statusnya berhasil.
+        // Pengecekan jika respon gagal
         if (!response.ok) {
             throw new Error('Gagal mendapatkan gambar dari API');
         }

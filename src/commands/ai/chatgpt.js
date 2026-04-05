@@ -1,10 +1,9 @@
 import config from '../../config.js';
 
 export default async function (sock, msg, remoteJid, args) {
-    // Gabungkan array argumen menjadi satu string kalimat pertanyaan utuh
     const text = args.join(' ');
     
-    // Validasi jika user hanya mengetik /ai tanpa pertanyaan
+    // Validasi jika user hanya mengetik perintah tanpa pertanyaan
     if (!text) {
         return await sock.sendMessage(
             remoteJid, 
@@ -16,14 +15,11 @@ export default async function (sock, msg, remoteJid, args) {
     try {
         await sock.sendMessage(remoteJid, { text: '⏳ Sedang memikirkan jawaban...' }, { quoted: msg });
 
-        // Mengambil respons dari API ExsalAPI (v2)
         const endpoint = `https://exsalapi.my.id/api/ai/text/gpt-4o-mini/v2?apikey=${config.apiKey}&text=${encodeURIComponent(text)}`;
         
-        // Node 18+ sudah memiliki fitur 'fetch' secara bawaan sehingga kita tak membuang memori tambahan
         const response = await fetch(endpoint);
         const data = await response.json();
 
-        // Mengambil string pesan secara spesifik sesuai struktur respons API
         let aiReply = data?.data?.content;
 
         // Validasi apabila API gagal merespons dengan konten (atau error/sedang limit)
@@ -33,7 +29,7 @@ export default async function (sock, msg, remoteJid, args) {
              aiReply = JSON.stringify(aiReply);
         }
 
-        // Mengirimkan hasil AI kembali ke nomor user
+        // Mengirimkan respon chatgpt kembali ke nomor user
         await sock.sendMessage(remoteJid, { text: aiReply }, { quoted: msg });
 
     } catch (error) {

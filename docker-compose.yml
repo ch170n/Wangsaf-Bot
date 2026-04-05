@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  bot-wa:
+    build: .
+    container_name: wangsaf-bot
+    restart: unless-stopped
+    volumes:
+      # Sinkronisasi folder session agar tidak minta scan QR setiap kali server direstart
+      - ./session:/app/session
+      # Sinkronisasi file .env agar gampang ganti API KEY tanpa harus build ulang
+      - ./.env:/app/.env

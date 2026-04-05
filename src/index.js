@@ -19,8 +19,6 @@ async function startBot() {
         browser: Browsers.macOS('Desktop'),
     });
 
-    // Bagian Pairing code telah dihapus sepenuhnya sesuai permintaan
-
     sock.ev.on('connection.update', (update) => {
         const { connection, qr } = update;
         

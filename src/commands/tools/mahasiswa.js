@@ -23,7 +23,6 @@ export default async function (sock, msg, remoteJid, args) {
         if (data.status === true && data.result && data.result.length > 0) {
             let replyText = `🎓 *HASIL PENCARIAN MAHASISWA*\nDitemukan: ${data.found} kecocokan data\n\n`;
             
-            // Loop data array yang dikembalikan dari API untuk disusun menjadi string chat yang rapi
             data.result.forEach((mhs, index) => {
                 replyText += `*${index + 1}. ${mhs.nama.split('(')[0].trim()}*\n`; // Menghilangkan double text nama jika format API menyatukan NIM 
                 replyText += `- NIM: ${mhs.nim}\n`;
