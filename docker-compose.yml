@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   bot-wa:
     build: .
-    container_name: wangsaf-bot
+    container_name: wangsaf-bot-container
     restart: unless-stopped
     volumes:
       # Sinkronisasi folder session agar tidak minta scan QR setiap kali server direstart
