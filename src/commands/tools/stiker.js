@@ -3,13 +3,12 @@ import path from 'path';
 import os from 'os';
 import { exec } from 'child_process';
 import sharp from 'sharp';
-import ffmpegPath from 'ffmpeg-static';
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 
 export default async function (sock, msg, remoteJid) {
     let tempIn, tempOut;
     try {
-        await sock.sendMessage(remoteJid, { text: '⏳ Mengekstrak media untuk stiker (Platform Murni)...' }, { quoted: msg });
+        await sock.sendMessage(remoteJid, { text: '⏳ Membuat stiker...' }, { quoted: msg });
 
         let actualMessage = msg.message;
         const msgTypeOriginal = Object.keys(msg.message || {})[0];
@@ -78,8 +77,7 @@ export default async function (sock, msg, remoteJid) {
                 .webp({ quality: 70 })
                 .toBuffer();
         } else {
-            // Menggunakan child_process
-            // Mengamankan temp direktori agar kompeten dengan environment OS manapun
+            // PENGGUNAAN CHILD_PROCESS MURNI
             const tempDir = os.tmpdir();
             const tempPrefix = path.join(tempDir, `stiker_${Date.now()}`);
             const inputExt = isGif ? '.gif' : '.mp4'; 
@@ -89,19 +87,26 @@ export default async function (sock, msg, remoteJid) {
             
             fs.writeFileSync(tempIn, rawBuffer);
             
-            await new Promise((resolve, reject) => {
-                // Di Linux, path FFMPEG native / bawaan sistem akan digunakan (bukan library)
-                // Di Windows lokal, akan fallback ke executable binary statis lokal
-                const exePath = process.platform === 'linux' ? 'ffmpeg' : `"${ffmpegPath}"`;
+            await new Promise(async (resolve, reject) => {
+                let exePath = 'ffmpeg';
                 
-                // Konfigurasi WebP untuk Standar Animasi WA WebP
-                // Menggunakan black@0.0 (background transparan tanpa white-cast)
-                const command = `${exePath} -i "${tempIn}" -vcodec libwebp -filter:v fps=15,scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0.0 -lossless 0 -loop 0 -preset default -an -vsync 0 -t 00:00:10 "${tempOut}"`;
+                // Amankan import ffmpeg-static agar tidak crash saat di Linux jika binerinya tidak kompetible
+                if (process.platform !== 'linux') {
+                    try {
+                        const staticMod = await import('ffmpeg-static');
+                        if (staticMod.default) exePath = `"${staticMod.default}"`;
+                    } catch (e) {
+                         // Abaikan jika tidak menginstal ffmpeg-static di lokal
+                    }
+                }
+                
+                // Konfigurasi WebP untuk Standar Animasi WA WebP (Format warna hex 0x00000000 mencegah conflict pada ffmpeg system)
+                const command = `${exePath} -i "${tempIn}" -vcodec libwebp -filter:v fps=15,scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000 -lossless 0 -loop 0 -preset default -an -vsync 0 -t 00:00:10 "${tempOut}"`;
                 
                 exec(command, (err, stdout, stderr) => {
                     if (err) {
                         console.error('Prosesor Sistem Video Error:', stderr);
-                        reject(err);
+                        reject(new Error(stderr || err.message || err));
                     } else resolve();
                 });
             });
@@ -113,7 +118,10 @@ export default async function (sock, msg, remoteJid) {
 
     } catch (error) {
         console.error('Error Pembuatan Stiker Murni:', error);
-        await sock.sendMessage(remoteJid, { text: 'Gagal membuat stiker. Kemungkinan besar format media melanggar aturan codec konversi 😢' }, { quoted: msg });
+        
+        // Membocorkan detail error agar dapat dipecahkan
+        const errMsg = error.message || String(error);
+        await sock.sendMessage(remoteJid, { text: `😔 *Gagal memproses Stiker!*\n\nPesan error server):\n_${errMsg.substring(0, 500)}_` }, { quoted: msg });
     } finally {
         try {
             if (tempIn && fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
