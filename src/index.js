@@ -2,7 +2,6 @@ import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, Browser
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
 
-import config from './config.js'; 
 import { handleConnection } from './handlers/connection.js';
 import { handleMessage } from './handlers/message.js';
 
@@ -37,7 +36,10 @@ async function startBot() {
     sock.ev.on('creds.update', saveCreds);
 
     sock.ev.on('messages.upsert', (m) => {
-        handleMessage(sock, m);
+        // Mencegah pengeksekusian ulang command saat bot pindah dari lokal ke VPS (Sync History)
+        if (m.type === 'notify') {
+            handleMessage(sock, m);
+        }
     });
 }
 
