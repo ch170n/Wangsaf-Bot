@@ -10,36 +10,58 @@ export default async function (sock, msg, remoteJid) {
     try {
         await sock.sendMessage(remoteJid, { text: '⏳ Memproses stiker...' }, { quoted: msg });
 
-        // Temukan payload gambar / video
+        // Temukan payload gambar / video (Mendukung Ephemeral / View Once)
+        let actualMessage = msg.message;
+        const msgTypeOriginal = Object.keys(msg.message || {})[0];
+        if (msgTypeOriginal === 'ephemeralMessage') {
+            actualMessage = msg.message.ephemeralMessage.message;
+        } else if (msgTypeOriginal === 'viewOnceMessageV2' || msgTypeOriginal === 'viewOnceMessage') {
+            actualMessage = msg.message[msgTypeOriginal].message;
+        }
+
         let mediaPayload;
         let isVideo = false;
-        const type = Object.keys(msg.message)[0];
+        let isGif = false;
+        const type = Object.keys(actualMessage || {})[0];
         
         if (type === 'imageMessage') {
-            mediaPayload = msg.message.imageMessage;
+            mediaPayload = actualMessage.imageMessage;
         } else if (type === 'videoMessage') {
-            mediaPayload = msg.message.videoMessage;
+            mediaPayload = actualMessage.videoMessage;
             isVideo = true;
-        } else if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
-            const quoted = msg.message.extendedTextMessage.contextInfo.quotedMessage;
-            if (quoted.imageMessage) mediaPayload = quoted.imageMessage;
-            else if (quoted.videoMessage) {
+        } else if (type === 'documentMessage' && actualMessage.documentMessage?.mimetype === 'image/gif') {
+            mediaPayload = actualMessage.documentMessage;
+            isVideo = true;
+            isGif = true;
+        } else if (actualMessage?.extendedTextMessage?.contextInfo?.quotedMessage) {
+            const quoted = actualMessage.extendedTextMessage.contextInfo.quotedMessage;
+            if (quoted.imageMessage) {
+                mediaPayload = quoted.imageMessage;
+            } else if (quoted.videoMessage) {
                 mediaPayload = quoted.videoMessage;
                 isVideo = true;
+            } else if (quoted.documentMessage?.mimetype === 'image/gif') {
+                mediaPayload = quoted.documentMessage;
+                isVideo = true;
+                isGif = true;
             }
         }
 
         if (!mediaPayload) {
-            return await sock.sendMessage(remoteJid, { text: 'Gagal! Hanya mendukung gambar atau video singkat saat ini.' }, { quoted: msg });
+            return await sock.sendMessage(remoteJid, { text: 'Gagal! Pastikan Anda Mengirimkan gambar, gif, atau video singkat.' }, { quoted: msg });
         }
         
-        // WhatsApp tidak mengizinkan stiker animasi terlalu panjang / berat
-        if (isVideo && mediaPayload.seconds > 10) {
+        // Membatasi durasi video menjadi 10 detik
+        if (isVideo && !isGif && mediaPayload.seconds > 10) {
             return await sock.sendMessage(remoteJid, { text: 'Durasi video maksimal adalah 10 detik untuk stiker bergerak!' }, { quoted: msg });
         }
 
         // Unduh buffer original
-        const streamType = isVideo ? 'video' : 'image';
+        let streamType = isVideo ? 'video' : 'image';
+        if (isGif || type === 'documentMessage' || actualMessage?.extendedTextMessage?.contextInfo?.quotedMessage?.documentMessage) {
+            streamType = 'document';
+        }
+
         const stream = await downloadContentFromMessage(mediaPayload, streamType);
         let rawBuffer = Buffer.from([]);
         for await(const chunk of stream) {
@@ -58,21 +80,27 @@ export default async function (sock, msg, remoteJid) {
                 .webp({ quality: 70 })
                 .toBuffer();
         } else {
-            // Jika gambar bergerak/video
+            // Jika gambar bergerak/video/gif
             // Membuat WebP Animasi manual menggunakan ffmpeg lokal
             const tempPrefix = path.join('./', Date.now() + '');
-            tempIn = tempPrefix + '.mp4';
+            const inputExt = isGif ? '.gif' : '.mp4'; 
+            tempIn = tempPrefix + inputExt;
             tempOut = tempPrefix + '.webp';
             
             fs.writeFileSync(tempIn, rawBuffer);
             
             await new Promise((resolve, reject) => {
-                // Perintah ffmpeg dasar untuk stiker WA yang valid (skala 512, format transparan rgba, looping animasi)
-                const command = `"${ffmpegPath}" -i "${tempIn}" -vcodec libwebp -filter:v fps=15,scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0.0 -lossless 0 -loop 0 -preset default -an -vsync 0 -t 00:00:10 "${tempOut}"`;
+                // Gunakan sistem ffmpeg jika di Linux/Docker Alpine untuk menghindari konflik glibc/musl dari ffmpeg-static
+                const exePath = process.platform === 'linux' ? 'ffmpeg' : `"${ffmpegPath}"`;
                 
-                exec(command, (err) => {
-                    if (err) reject(err);
-                    else resolve();
+                // Perintah ffmpeg dasar untuk stiker WA yang valid (skala 512, format transparan rgba, looping animasi)
+                const command = `${exePath} -i "${tempIn}" -vcodec libwebp -filter:v fps=15,scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0.0 -lossless 0 -loop 0 -preset default -an -vsync 0 -t 00:00:10 "${tempOut}"`;
+                
+                exec(command, (err, stdout, stderr) => {
+                    if (err) {
+                        console.error('FFMPEG Error:', stderr);
+                        reject(err);
+                    } else resolve();
                 });
             });
             
@@ -83,8 +111,8 @@ export default async function (sock, msg, remoteJid) {
         await sock.sendMessage(remoteJid, { sticker: stickerBuffer }, { quoted: msg });
 
     } catch (error) {
-        console.error('Error saat konversi manual ke stiker:', error);
-        await sock.sendMessage(remoteJid, { text: 'Yahh, gagal merender stiker 😢 Pastikan ukurannya normal.' }, { quoted: msg });
+        console.error('Error konversi stiker:', error);
+        await sock.sendMessage(remoteJid, { text: 'Gagal membuat stiker 😢 Mungkin filenya terlalu besar atau formatnya tidak didukung.' }, { quoted: msg });
     } finally {
         // Bersihkan sampah temporary file video agar tidak memenuhi penyimpanan 
         try {
