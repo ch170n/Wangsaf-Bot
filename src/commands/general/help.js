@@ -1,7 +1,7 @@
 import config from '../../config.js';
 
 export default async function (sock, msg, remoteJid) {
-    const text = `======[ DAFTAR PERINTAH ]======
+    const text = `=====[ DAFTAR PERINTAH ]=====
 
 🤖 *Bot Info*
 - *${config.prefix}start* - Melihat deskripsi bot

@@ -23,14 +23,24 @@ export const handleMessage = async (sock, m) => {
 
         const remoteJid = msg.key.remoteJid;
         
-        // Mendeteksi tipe file atau pengirim pesan
-        const type = Object.keys(msg.message)[0];
+        // Membongkar struktur pesan jika bentuknya Ephemeral (Pesan Sementara) atau View Once
+        let actualMessage = msg.message;
+        const msgType = Object.keys(msg.message)[0];
         
+        if (msgType === 'ephemeralMessage') {
+            actualMessage = msg.message.ephemeralMessage.message;
+        } else if (msgType === 'viewOnceMessageV2' || msgType === 'viewOnceMessage') {
+            actualMessage = msg.message[msgType].message;
+        }
+
+        // Tipe jeroan/murni (misal: imageMessage, videoMessage) setelah dibongkar
+        const type = Object.keys(actualMessage)[0];
+
         // Teks bisa didapat dari obrolan, atau tambahan pada media (caption)
-        const textMessage = msg.message.conversation || 
-                            msg.message.extendedTextMessage?.text || 
-                            msg.message.imageMessage?.caption || 
-                            msg.message.videoMessage?.caption || "";
+        const textMessage = actualMessage?.conversation || 
+                            actualMessage?.extendedTextMessage?.text || 
+                            actualMessage?.imageMessage?.caption || 
+                            actualMessage?.videoMessage?.caption || "";
 
         if (!textMessage) return;
 
