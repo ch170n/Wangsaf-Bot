@@ -1,16 +1,16 @@
-import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { exec } from 'child_process';
+import sharp from 'sharp';
 import ffmpegPath from 'ffmpeg-static';
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
 
 export default async function (sock, msg, remoteJid) {
     let tempIn, tempOut;
     try {
-        await sock.sendMessage(remoteJid, { text: '⏳ Memproses stiker...' }, { quoted: msg });
+        await sock.sendMessage(remoteJid, { text: '⏳ Mengekstrak media untuk stiker (Platform Murni)...' }, { quoted: msg });
 
-        // Temukan payload gambar / video (Mendukung Ephemeral / View Once)
         let actualMessage = msg.message;
         const msgTypeOriginal = Object.keys(msg.message || {})[0];
         if (msgTypeOriginal === 'ephemeralMessage') {
@@ -51,12 +51,10 @@ export default async function (sock, msg, remoteJid) {
             return await sock.sendMessage(remoteJid, { text: 'Gagal! Pastikan Anda Mengirimkan gambar, gif, atau video singkat.' }, { quoted: msg });
         }
         
-        // Membatasi durasi video menjadi 10 detik
         if (isVideo && !isGif && mediaPayload.seconds > 10) {
             return await sock.sendMessage(remoteJid, { text: 'Durasi video maksimal adalah 10 detik untuk stiker bergerak!' }, { quoted: msg });
         }
 
-        // Unduh buffer original
         let streamType = isVideo ? 'video' : 'image';
         if (isGif || type === 'documentMessage' || actualMessage?.extendedTextMessage?.contextInfo?.quotedMessage?.documentMessage) {
             streamType = 'document';
@@ -71,7 +69,7 @@ export default async function (sock, msg, remoteJid) {
         let stickerBuffer;
 
         if (!isVideo) {
-            // Jika gambar statis
+            // Konversi Gambar Statis menggunakan Sharp
             stickerBuffer = await sharp(rawBuffer)
                 .resize(512, 512, {
                     fit: 'contain', 
@@ -80,25 +78,29 @@ export default async function (sock, msg, remoteJid) {
                 .webp({ quality: 70 })
                 .toBuffer();
         } else {
-            // Jika gambar bergerak/video/gif
-            // Membuat WebP Animasi manual menggunakan ffmpeg lokal
-            const tempPrefix = path.join('./', Date.now() + '');
+            // Menggunakan child_process
+            // Mengamankan temp direktori agar kompeten dengan environment OS manapun
+            const tempDir = os.tmpdir();
+            const tempPrefix = path.join(tempDir, `stiker_${Date.now()}`);
             const inputExt = isGif ? '.gif' : '.mp4'; 
+            
             tempIn = tempPrefix + inputExt;
             tempOut = tempPrefix + '.webp';
             
             fs.writeFileSync(tempIn, rawBuffer);
             
             await new Promise((resolve, reject) => {
-                // Gunakan sistem ffmpeg jika di Linux/Docker Alpine untuk menghindari konflik glibc/musl dari ffmpeg-static
+                // Di Linux, path FFMPEG native / bawaan sistem akan digunakan (bukan library)
+                // Di Windows lokal, akan fallback ke executable binary statis lokal
                 const exePath = process.platform === 'linux' ? 'ffmpeg' : `"${ffmpegPath}"`;
                 
-                // Perintah ffmpeg dasar untuk stiker WA yang valid (skala 512, format transparan rgba, looping animasi)
-                const command = `${exePath} -i "${tempIn}" -vcodec libwebp -filter:v fps=15,scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=white@0.0 -lossless 0 -loop 0 -preset default -an -vsync 0 -t 00:00:10 "${tempOut}"`;
+                // Konfigurasi WebP untuk Standar Animasi WA WebP
+                // Menggunakan black@0.0 (background transparan tanpa white-cast)
+                const command = `${exePath} -i "${tempIn}" -vcodec libwebp -filter:v fps=15,scale=512:512:force_original_aspect_ratio=decrease,format=rgba,pad=512:512:(ow-iw)/2:(oh-ih)/2:color=black@0.0 -lossless 0 -loop 0 -preset default -an -vsync 0 -t 00:00:10 "${tempOut}"`;
                 
                 exec(command, (err, stdout, stderr) => {
                     if (err) {
-                        console.error('FFMPEG Error:', stderr);
+                        console.error('Prosesor Sistem Video Error:', stderr);
                         reject(err);
                     } else resolve();
                 });
@@ -107,14 +109,12 @@ export default async function (sock, msg, remoteJid) {
             stickerBuffer = fs.readFileSync(tempOut);
         }
         
-        // Kirim ke user
         await sock.sendMessage(remoteJid, { sticker: stickerBuffer }, { quoted: msg });
 
     } catch (error) {
-        console.error('Error konversi stiker:', error);
-        await sock.sendMessage(remoteJid, { text: 'Gagal membuat stiker 😢 Mungkin filenya terlalu besar atau formatnya tidak didukung.' }, { quoted: msg });
+        console.error('Error Pembuatan Stiker Murni:', error);
+        await sock.sendMessage(remoteJid, { text: 'Gagal membuat stiker. Kemungkinan besar format media melanggar aturan codec konversi 😢' }, { quoted: msg });
     } finally {
-        // Bersihkan sampah temporary file video agar tidak memenuhi penyimpanan 
         try {
             if (tempIn && fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
             if (tempOut && fs.existsSync(tempOut)) fs.unlinkSync(tempOut);
