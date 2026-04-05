@@ -15,7 +15,7 @@ export default async function (sock, msg, remoteJid) {
 
 🛠️ *Tools & Media*
 - *${config.prefix}stiker* atau *${config.prefix}s* - Mengubah gambar/video jadi stiker
-- *${config.prefix}dl* - Download cideo/image (Tiktok, IG, X)
+- *${config.prefix}dl* - Download video/image (Tiktok, IG, X)
 - *${config.prefix}fbdl* atau *${config.prefix}fb* - Facebook video downloader (HD)
 - *${config.prefix}qrcode* atau *${config.prefix}qr* - Buat QR Code dari teks/link
 - *${config.prefix}whatanime* atau *${config.prefix}wait* - Melacak judul anime dari gambar/url
